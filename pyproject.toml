@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "ape"
+version = "0.1.0"
+description = ""
+authors = ["fusedbloxxer <voidwarden@yahoo.com>"]
+readme = "README.md"
+packages = [{include = "ape"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+torch = "^2.1.1"
+numpy = "^1.26.2"
+datasets = "^2.15.0"
+ipykernel = "^6.27.1"
+ipywidgets = "^8.1.1"
+jupyter = "^1.0.0"
+matplotlib = "^3.8.2"
+tokenizers = "^0.15.0"
+transformers = "^4.35.2"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "default"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
