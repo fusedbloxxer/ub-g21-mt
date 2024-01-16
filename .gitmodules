@@ -1,0 +1,3 @@
+[submodule "onmt"]
+	path = onmt
+	url = https://github.com/fusedbloxxer/MST-OpenNMT

@@ -17,6 +17,10 @@ jupyter = "^1.0.0"
 matplotlib = "^3.8.2"
 tokenizers = "^0.15.0"
 transformers = "^4.35.2"
+python-dotenv = "^1.0.0"
+evaluate = "^0.4.1"
+sacrebleu = "^2.4.0"
+sentencepiece = "^0.1.99"
 
 [[tool.poetry.source]]
 name = "PyPI"
