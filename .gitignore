@@ -1,4 +1,6 @@
 # Custom
+/notebooks/lightning_logs/
+/mlruns/
 /cache/
 /data/
 /eval/

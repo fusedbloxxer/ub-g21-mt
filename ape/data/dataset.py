@@ -7,37 +7,43 @@ from collections import defaultdict, namedtuple
 from dataclasses import astuple, asdict
 
 from .. import DATA_DIR
-from .types import DataSplit
+from .types import APESplit
 from .types import APETripletPath
 from .types import APETripletDict
 
 
-class APEDataset(data.Dataset):
-    def __init__(self, path: Path, split: DataSplit) -> None:
+class APEDataset(data.Dataset[APETripletDict[str]]):
+    def __init__(self,
+                 path: Path,
+                 split: APESplit) -> None:
         super(APEDataset, self).__init__()
+        assert split in ('train', 'test')
 
         # Read dataset
-        self.split: DataSplit = split
+        self.split: APESplit = split
         self.path: Path = path / split
-        self.data: APETripletDict = self.__read_ape_data()
+        self.data_raw: APETripletDict[List[str]] = self.__read_ape_data()
+        self.data_sources: List[str] = list(self.data_raw.keys())
 
-    def __getitem__(self, index) -> Any:
+    def __getitem__(self, index: int) -> APETripletDict[str]:
+        context: APETripletDict[str] = cast(Any, {})
+
         # Get input data
-        src = self.data['src'][index]
-        mt = self.data['mt'][index]
+        context['src'] = self.data_raw['src'][index]
+        context['mt'] = self.data_raw['mt'][index]
 
         # Get target data
-        if 'pe' in self.data and self.data['pe']:
-            pe = self.data['pe'][index]
-            return dict(src=src, mt=mt, pe=pe)
-        return dict(src=src, mt=mt)
+        if 'pe' in self.data_raw:
+            context['pe'] = self.data_raw['pe'][index]
+
+        return context
 
     def __len__(self) -> int:
-        return len(self.data['src'])
+        return len(self.data_raw['src'])
 
-    def __read_ape_data(self) -> APETripletDict:
+    def __read_ape_data(self) -> APETripletDict[List[str]]:
         # Filter each entry based on string content
-        samples: APETripletDict = self.__read_ape_triplets()
+        samples: APETripletDict[List[str]] = self.__read_ape_triplets()
         triplets: Dict[str, List[str]] = defaultdict(list)
 
         # Skip empty strings as they bring no value
@@ -47,19 +53,19 @@ class APEDataset(data.Dataset):
         # Filter data
         for i in range(len(samples['src'])):
             # Skip triplets containing empty strings
-            if has_blank(samples['src'][i], samples['mt'][i], samples['pe'][i] if 'pe' in samples and samples['pe'] else None):
+            if has_blank(samples['src'][i], samples['mt'][i], samples['pe'][i] if 'pe' in samples else None):
                 continue
 
             # Keep Triplet
             triplets['src'].append(samples['src'][i])
             triplets['mt'].append(samples['mt'][i])
-            if 'pe' in samples and samples['pe']:
+            if 'pe' in samples:
                 triplets['pe'].append(samples['pe'][i])
-        return cast(APETripletDict, triplets)
+        return cast(APETripletDict[List[str]], triplets)
 
-    def __read_ape_triplets(self) -> APETripletDict:
+    def __read_ape_triplets(self) -> APETripletDict[List[str]]:
         # Store all strings in-memory
-        samples: APETripletDict = cast(Any, defaultdict(list))
+        samples: APETripletDict[List[str]] = cast(Any, defaultdict(list))
 
         # Read files for each triplet at a time
         for triplet in self.__find_ape_files():
@@ -70,7 +76,7 @@ class APEDataset(data.Dataset):
         # Perform validations
         if len(samples['src']) != len(samples['mt']):
             raise Exception('src and mt entries must be of the same length')
-        if 'pe' in samples and samples['pe'] and len(samples['mt']) != len(samples['pe']):
+        if 'pe' in samples and len(samples['mt']) != len(samples['pe']):
             raise Exception('pe, mt and src entries must be of the same length')
         return samples
 
@@ -111,3 +117,7 @@ class APEDataset(data.Dataset):
             if triplet.mt.stem != triplet.pe.stem:
                 raise Exception('an APE triplet must have matching mt and pe files: {}'.format(triplet))
         return triplets
+
+    def to_dict(self) -> Dict[str, List[str]]:
+        return cast(dict, self.data_raw)
+
